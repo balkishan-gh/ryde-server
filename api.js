@@ -48,29 +48,34 @@ api.post("/signup", (req, res) => {
   console.log("You've reached here");
   console.log(req.body);
   const userPayload = { name: req.body.name, email: req.body.email };
-  const accessToken = generateAccessToken(userPayload);
-  const refreshToken = generateRefreshToken(userPayload);
-  console.log(accessToken, refreshToken);
-  const user = new User({
-    name: req.body.name,
-    email: req.body.email,
-    // number: req.body.number,
-    // role: req.body.role,
-    jwt: accessToken,
-    password: req.body.password,
-  });
-  user
-    .save()
-    .then((response) => {
-      console.log(response);
-      res.setHeader("Authorization", `Bearer ${accessToken}`);
-      res.json({ message: "Sign up successful", refreshToken: refreshToken });
-      // res.json({  });
-      console.log("Line 40 Bal Kishan");
-    })
-    .catch((e) => {
-      console.log(e);
+  User.findOne({ email: req.body.email }).then((response) => {
+    if (response) {
+      return res.json({ message: "Email already exists.", isValid: false });
+    }
+    const accessToken = generateAccessToken(userPayload);
+    const refreshToken = generateRefreshToken(userPayload);
+    console.log(accessToken, refreshToken);
+    const user = new User({
+      name: req.body.name,
+      email: req.body.email,
+      // number: req.body.number,
+      // role: req.body.role,
+      jwt: accessToken,
+      password: req.body.password,
     });
+    user
+      .save()
+      .then((response) => {
+        console.log(response);
+        res.setHeader("Authorization", `Bearer ${accessToken}`);
+        res.json({ message: "Sign up successful", refreshToken: refreshToken });
+        // res.json({  });
+        console.log("Line 40 Bal Kishan");
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  });
 });
 
 api.post("/signin", (req, res) => {
@@ -78,9 +83,12 @@ api.post("/signin", (req, res) => {
   User.findOne({ email: req.body.email })
     .then((response) => {
       console.log(response);
-      // if (response.password !== req.password) {
-      //   return res.json({ message: "Invalid User" });
-      // }
+      if (!response) {
+        return res.json({ message: "Email doesn't exists.", isValid: false });
+      }
+      if (response.password !== req.password) {
+        return res.json({ message: "Invalid User", isMatched: false });
+      }
       const userPayload = { name: response.name, email: response.email };
       const accessToken = generateAccessToken(userPayload);
       const refreshToken = generateRefreshToken(userPayload);
